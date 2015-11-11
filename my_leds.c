@@ -80,12 +80,12 @@ static int s3c24xx_leds_open(struct inode *inode, struct file *file)
 	}
 	}
 
-	return 1;
+	return 0;
 }
 
 
 
-static int s3c24xx_leds_read(struct file *filp, char __user buff, size_t count , loff_t *offp)
+static int s3c24xx_leds_read(struct file *filp, char __user *buff, size_t count , loff_t *offp)
 {
 	int minor = MINOR(filp->f_dentry->d_inode->i_rdev);
 	char val;
@@ -103,6 +103,7 @@ static int s3c24xx_leds_read(struct file *filp, char __user buff, size_t count ,
 			val = leds_status & 0x1;
 			up(&leds_lock);
 			copy_to_user(buff,(const void *)&val, 1);
+			break;
 		}
 	case 2: /* /dev/led2 */
 		{
@@ -122,14 +123,15 @@ static int s3c24xx_leds_read(struct file *filp, char __user buff, size_t count ,
 		}
 	}
 
-	return 0;
+	return 1;
 }
 
-static ssize_t s3c24xx_leds_write(struct file *file, const char __user buf,size_t count, loff_t *oppos)
+static ssize_t s3c24xx_leds_write(struct file *file, const char __user *buf,size_t count, loff_t *ppos)
 {
 	int minor = MINOR(file->f_dentry->d_inode->i_rdev);
 	char val;
-	copy_to_user(&val, buf, 1);
+	copy_from_user(&val, buf, 1);
+
 	
 	switch(minor)
 	{
@@ -149,7 +151,7 @@ static ssize_t s3c24xx_leds_write(struct file *file, const char __user buf,size_
 			if(val == 0){
 				down(&leds_lock);
 				leds_status &= ~(1<<0);
-				up(&leds_status);
+				up(&leds_lock);
 			}
 			else{
 				down(&leds_lock);
