@@ -9,7 +9,6 @@
 #include <asm/arch/regs-gpio.h>
 #include <asm/hardware.h>
 #include <asm/arch-s3c2410/map.h>
-//#include <arch/arm/mach-s3c2410/include/mach/>
 
 #define DEVICE_NAME  "leds" /*cat/proc/devices*/
 #define LED_MAJOR 	231 /*主设备号*/
@@ -41,6 +40,11 @@ static int s3c24xx_leds_open(struct inode *inode, struct file *file)
 		s3c2410_gpio_cfgpin(S3C2410_GPF4, S3C2410_GPF4_OUTP);
 		s3c2410_gpio_cfgpin(S3C2410_GPF5, S3C2410_GPF5_OUTP);
 		s3c2410_gpio_cfgpin(S3C2410_GPF6, S3C2410_GPF6_OUTP);
+		
+		s3c2410_gpio_setpin(S3C2410_GPF4, 0);
+		s3c2410_gpio_setpin(S3C2410_GPF5, 0);
+		s3c2410_gpio_setpin(S3C2410_GPF6, 0);
+
 		down(&leds_lock);
 		leds_status = 0x0;
 		up(&leds_lock);
@@ -76,7 +80,7 @@ static int s3c24xx_leds_open(struct inode *inode, struct file *file)
 	}
 	}
 
-	return 0;
+	return 1;
 }
 
 
@@ -105,7 +109,7 @@ static int s3c24xx_leds_read(struct file *filp, char __user buff, size_t count ,
 			down(&leds_lock);
 			val = (leds_status >> 1) & 0x1;
 			up(&leds_lock);
-			cop_to_user(buff,(const void *)&val, 1);
+			copy_to_user(buff,(const void *)&val, 1);
 			break;
 		}
 	case 3: /* /dev/led3 */
@@ -231,7 +235,7 @@ static int __init s3c24xx_leds_init(void)
 	leds_class_devs[0] = class_device_create(leds_class,NULL,MKDEV(LED_MAJOR,0),NULL,"leds");
 
 	for(minor = 1; minor < 4; minor++){
-		leds_class_devs[minor] = class_device_create(leds_class,NULL,MKDEV(LED_MAJOR, minor),NULL, "LED%d",minor);
+		leds_class_devs[minor] = class_device_create(leds_class,NULL,MKDEV(LED_MAJOR, minor),NULL, "led%d",minor);
 		if(unlikely(IS_ERR(leds_class_devs[minor])))
 			return PTR_ERR(leds_class_devs[minor]);
 
